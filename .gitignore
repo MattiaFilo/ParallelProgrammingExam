@@ -1,0 +1,22 @@
+# Build artifacts
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# VS Code
+.vscode/*.log
+.vscode/ipch/
+
+# Executables
+/src/main
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dataset
+/datasets/

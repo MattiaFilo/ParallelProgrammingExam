@@ -27,6 +27,10 @@ struct MultiDimPoint {
 
     double distance(MultiDimPoint* p) {
         if (n_dimensions != p->n_dimensions) {
+            cout << "Current point: " << endl;
+            print();
+            cout << "Distance point: " << endl;
+            p->print();
             throw invalid_argument("Cannot compute distance between points with different number of dimensions");
         }
 
@@ -39,6 +43,10 @@ struct MultiDimPoint {
 
     void add(MultiDimPoint* p, double* sum) {
         if (n_dimensions != p->n_dimensions) {
+            cout << "Current point: " << endl;
+            print();
+            cout << "Add point: " << endl;
+            p->print();
             throw invalid_argument("Cannot add points with different number of dimensions");
         }
 
@@ -117,6 +125,9 @@ MultiDimPoint* getPointsFromCsv(Dataset* dataset, int& n_points) {
         points[i] = MultiDimPoint(dimensions, dataset->points_dimensions);
         i++;
     }
+
+    // TODO: manage the possibility that points in the dataset may be fewer than n_points (i < n_points after loop)
+
     return points;
 }
 
@@ -191,33 +202,4 @@ void kMeans(Dataset* dataset, int& n_points, int& n_clusters, int max_iters, uns
         points[p].print();
     } */
     kMeans(points, n_points, n_clusters, max_iters, in_seed, dataset->points_dimensions, output_name);
-}
-
-// Tests
-void testGetPointsFromCsv(Dataset* dataset, int& n_points) {
-    string line;
-    ifstream file(dataset->filename);
-    int i = 0;
-    bool skipFirst = dataset->skipFirstLine;
-
-    while (getline(file, line)) {
-        if (i >= n_points) break;
-        if (skipFirst) {
-            skipFirst = false;
-            continue;
-        };
-        stringstream lineStream(line);
-        string bit;
-        double dimension;
-        int d = 0;
-        cout << "Line: " << line << endl;
-        while(getline(lineStream, bit, ',')){
-            if (d >= dataset->points_dimensions) break;
-            dimension = stof(bit);
-            cout << "dimension" << d << ": " << dimension << ", ";
-            d++;
-        }
-        cout << endl;
-        i++;
-    }
 }

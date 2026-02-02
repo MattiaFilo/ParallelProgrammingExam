@@ -11,8 +11,15 @@
 
 using namespace std;
 
+// Forward declaration of Cluster struct
 struct Cluster;
 
+/*
+Struct that models multi-dimensional point.
+dimension: array containing a double for each dimension of the point
+n_dimension: number of dimensions
+cluster: cluster assigned to this point
+*/
 struct MultiDimPoint {
     double* dimensions;
     int n_dimensions;
@@ -25,6 +32,7 @@ struct MultiDimPoint {
         }
     }
 
+    // Euclidean distance between this and the given point
     double distance(MultiDimPoint* p) {
         if (n_dimensions != p->n_dimensions) {
             cout << "Current point: " << endl;
@@ -41,6 +49,7 @@ struct MultiDimPoint {
         return sqrt(accumulator);
     }
 
+    // Adds this point to the given one and saves the result in sum
     void add(MultiDimPoint* p, double* sum) {
         if (n_dimensions != p->n_dimensions) {
             cout << "Current point: " << endl;
@@ -55,20 +64,24 @@ struct MultiDimPoint {
         }
     }
 
+    // Adds this point's components to an accumulator (used for Cluster new centroid calculation)
     void addToAccumulator(double* accumulator) {
         for (int i = 0; i < n_dimensions; i++) {
             accumulator[i] += dimensions[i];
         }
     }
 
+    // Update Cluster's centroid
     void updateDimensions(double* dimensions_sums, int& n_points) {
         for (int i = 0; i < n_dimensions; i++) {
             dimensions[i] = dimensions_sums[i] / n_points;
         }
     }
 
+    // Implementation below
     void assingCluster(Cluster* c);
 
+    // Print point components
     void print() {
         cout << "Point: ";
         for (int d = 0; d < n_dimensions; d++) {
@@ -78,6 +91,13 @@ struct MultiDimPoint {
     }
 };
 
+/*
+Struct that models cluster.
+id: identifier of the cluster (used in output printing)
+centroid: point that represents the centroid of the cluster
+dimensions_sums: array containing the sums of each points' dimensions
+n_points: number of points assigned to this cluster
+*/
 struct Cluster {
     int id = 0;
     MultiDimPoint centroid;
@@ -87,17 +107,20 @@ struct Cluster {
     Cluster(): id(0), n_points(0) {}
     Cluster(int id): id(id), n_points(0) {}
 
+    // Update centroid based on assigned points
     void updateCentroid() {
         centroid.updateDimensions(dimensions_sums, n_points);
     }
 };
 
+// Assign cluster to point and compute sums
 void MultiDimPoint::assingCluster(Cluster* c) {
     cluster = c;
     addToAccumulator(c->dimensions_sums);
     (c->n_points)++;
 }
 
+// Get desired number of points from given csv file. Format: "x,y,z,..." on each line
 MultiDimPoint* getPointsFromCsv(Dataset* dataset, int& n_points) {
     MultiDimPoint* points = new MultiDimPoint[n_points];
     string line;
@@ -131,12 +154,14 @@ MultiDimPoint* getPointsFromCsv(Dataset* dataset, int& n_points) {
     return points;
 }
 
+// Initialize clusters with incremental id
 void initClusters(Cluster* clusters, int& n_clusters) {
     for (int c = 0; c < n_clusters; c++) { // Iterate through clusters
         clusters[c] = Cluster(c);
     }
 }
 
+// Assign cluster to points based on their distance
 void assignPointsToCentroids(MultiDimPoint* points, Cluster* clusters, int& n_points, int& n_clusters) {
     for (int p = 0; p < n_points; p++) { // Iterate through points
         double min_distance = __DBL_MAX__; // Initialize min distance to double max value
@@ -151,12 +176,14 @@ void assignPointsToCentroids(MultiDimPoint* points, Cluster* clusters, int& n_po
     }
 }
 
+// Update each cluster's centroid
 void updateCentroids(Cluster* clusters, int& n_clusters) {
     for (int c = 0; c < n_clusters; c++) { // Iterate through clusters
         clusters[c].updateCentroid();
     }
 }
 
+// Write results (points values and assigned cluster) to csv file (one point per line)
 void outputResultsToFile(string filename, MultiDimPoint* points, Cluster* clusters, int& n_points, int& n_clusters, int& points_dimensions) {
     ofstream myfile;
     myfile.open(filename);

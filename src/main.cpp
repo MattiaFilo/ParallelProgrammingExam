@@ -1,5 +1,7 @@
 #include "Dataset.h"
-#include "sequential.cpp"
+//#include "sequential.cpp"
+//#include "parallel.cpp"
+#include "serial_new.cpp"
 #include <iostream>
 
 int main(int argc, char** argv) {
@@ -21,7 +23,9 @@ int main(int argc, char** argv) {
     unsigned int seed = 1111; // seed for cluster initialization
     int max_iters = 2000; // max number of iterations
 
-    kMeans(&wineQuality, n_points, n_clusters, max_iters, seed, "../outputs/results_sequential_wine_replicated_" + std::to_string(seed) + "_" + std::to_string(max_iters) + ".csv");
+    // Compute k-means on data and output to csv file
+    //kMeans(&wineQuality, n_points, n_clusters, max_iters, seed, "../outputs/results_sequential_wine_replicated_" + std::to_string(seed) + "_" + std::to_string(max_iters) + ".csv");
+    kMeans(&wineQuality, n_points, n_clusters, max_iters, seed, "../outputs/results_parallel_wine_replicated_" + std::to_string(seed) + "_" + std::to_string(max_iters) + ".csv");
 
     return 0;
 }

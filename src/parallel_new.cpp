@@ -12,7 +12,7 @@
 
 using namespace std;
 
-void kMeans(Dataset* dataset, int& n_points, int& n_clusters, int max_iters, unsigned int in_seed, string output_name) {
+void kMeansParallel(Dataset* dataset, int& n_points, int& n_clusters, int max_iters, unsigned int in_seed, string output_name) {
     const int MAX_POINTS = 10000;
     const int MAX_DIMENSIONS = 50;
     const int MAX_CLUSTERS = 50;
@@ -59,11 +59,15 @@ void kMeans(Dataset* dataset, int& n_points, int& n_clusters, int max_iters, uns
         random_point_indexes[c] = rand() % n_points;
     }
 
-    for (int c = 0; c < n_clusters && c < MAX_CLUSTERS; c++) {
-        for (int d = 0; d < dataset->points_dimensions && d < MAX_DIMENSIONS; d++) {
-            centroids[c][d] = points[random_point_indexes[c]][d];
-            dimensions_sums[c][d] = 0; 
-            cluster_size[c] = 0;
+    #pragma omp parallel default(none) shared(points, centroids, dimensions_sums, cluster_size, dataset, n_points, n_clusters, random_point_indexes)
+    {
+        #pragma omp for collapse(2)
+        for (int c = 0; c < n_clusters; c++) {
+            for (int d = 0; d < dataset->points_dimensions; d++) {
+                centroids[c][d] = points[random_point_indexes[c]][d];
+                dimensions_sums[c][d] = 0; 
+                cluster_size[c] = 0;
+            }
         }
     }
 

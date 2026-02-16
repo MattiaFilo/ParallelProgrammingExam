@@ -56,15 +56,22 @@ void kMeansParallel(Dataset* dataset, int& n_points, int& n_clusters, int max_it
     srand(in_seed ? in_seed : time(0));
     int random_point_indexes[n_clusters];
 
-    for (int c = 0; c < n_clusters; c++) {
-        random_point_indexes[c] = rand() % n_points;
-    }
+    #pragma omp parallel default(none) shared(points, centroids, dimensions_sums, cluster_size, dataset, n_points, n_clusters, random_point_indexes)
+    {
+        #pragma omp for
+        for (int c = 0; c < n_clusters; c++) {
+            random_point_indexes[c] = rand() % n_points;
+        }
 
-    for (int c = 0; c < n_clusters; c++) {
-        for (int d = 0; d < dataset->points_dimensions; d++) {
-            centroids[c][d] = points[random_point_indexes[c]][d];
-            dimensions_sums[c][d] = 0; 
-            cluster_size[c] = 0;
+        #pragma omp barrier
+
+        #pragma omp for collapse(2)
+        for (int c = 0; c < n_clusters; c++) {
+            for (int d = 0; d < dataset->points_dimensions; d++) {
+                centroids[c][d] = points[random_point_indexes[c]][d];
+                dimensions_sums[c][d] = 0; 
+                cluster_size[c] = 0;
+            }
         }
     }
 
@@ -72,49 +79,46 @@ void kMeansParallel(Dataset* dataset, int& n_points, int& n_clusters, int max_it
 
     double pre_iterations = omp_get_wtime();
 
-    for(int iter = 0; iter < max_iters; iter++) {
-        // Assign points to nearest centroid
-        #pragma omp parallel for default(none) shared(points, centroids, dimensions_sums, cluster_size, dataset, n_points, n_clusters, max_iters) private(distance, min_distance)
-        for (int p = 0; p < n_points; p++) {
-            min_distance = __DBL_MAX__;
-            int assigned_cluster = -1;
-            for (int c = 0; c < n_clusters; c++) {
-                distance = 0;
-                //#pragma omp reduction(+:distance)
-                for (int d = 0; d < dataset->points_dimensions; d++) {
-                    distance += pow(points[p][d] - centroids[c][d], 2);
-                }
-                distance = sqrt(distance);
-                #pragma omp flush(min_distance)
-                if (distance < min_distance) {
-                    #pragma omp critical
-                    {
-                        if (distance < min_distance) {
-                            min_distance = distance;
-                            points[p][dataset->points_dimensions] = c; // Assign cluster index to point
-                            assigned_cluster = c;
-                        }
+    #pragma omp parallel default(none) shared(points, centroids, dimensions_sums, cluster_size, dataset, n_points, n_clusters, max_iters, min_distance, distance)
+    {
+        for(int iter = 0; iter < max_iters; iter++) {
+            // Assign points to nearest centroid
+            #pragma omp for
+            for (int p = 0; p < n_points; p++) {
+                min_distance = __DBL_MAX__;
+                int assigned_cluster = -1;
+                for (int c = 0; c < n_clusters; c++) {
+                    distance = 0;
+                    #pragma omp simd reduction(+:distance)
+                    for (int d = 0; d < dataset->points_dimensions; d++) {
+                        distance = pow(points[p][d] - centroids[c][d], 2);
+                    }
+                    distance = sqrt(distance);
+                    if (distance < min_distance) {
+                        min_distance = distance;
+                        points[p][dataset->points_dimensions] = c; // Assign cluster index to point
+                        assigned_cluster = c;
                     }
                 }
-            }
 
-            #pragma omp atomic
-            cluster_size[assigned_cluster]++;
-            for (int d = 0; d < dataset->points_dimensions && d < MAX_DIMENSIONS; d++) {
                 #pragma omp atomic
-                dimensions_sums[assigned_cluster][d] += points[p][d];
-            }
-        }
-
-        // Update centroids
-        for (int c = 0; c < n_clusters && c < MAX_CLUSTERS; c++) {
-            for (int d = 0; d < dataset->points_dimensions && d < MAX_DIMENSIONS; d++) {
-                if (cluster_size[c] > 0) {
-                    centroids[c][d] = dimensions_sums[c][d] / cluster_size[c];
+                cluster_size[assigned_cluster]++;
+                for (int d = 0; d < dataset->points_dimensions && d < MAX_DIMENSIONS; d++) {
+                    #pragma omp atomic
+                    dimensions_sums[assigned_cluster][d] += points[p][d];
                 }
-                dimensions_sums[c][d] = 0; // Reset for next iteration
             }
-            cluster_size[c] = 0; // Reset for next iteration
+
+            // Update centroids
+            for (int c = 0; c < n_clusters && c < MAX_CLUSTERS; c++) {
+                for (int d = 0; d < dataset->points_dimensions && d < MAX_DIMENSIONS; d++) {
+                    if (cluster_size[c] > 0) {
+                        centroids[c][d] = dimensions_sums[c][d] / cluster_size[c];
+                    }
+                    dimensions_sums[c][d] = 0; // Reset for next iteration
+                }
+                cluster_size[c] = 0; // Reset for next iteration
+            }
         }
     }
 

@@ -1,7 +1,7 @@
 #include "Dataset.h"
 //#include "sequential.cpp"
 //#include "parallel.cpp"
-#include "serial_new.cpp"
+#include "sequential_new.cpp"
 #include "parallel_new.cpp"
 #include <iostream>
 
@@ -26,8 +26,8 @@ int main(int argc, char** argv) {
 
     // Compute k-means on data and output to csv file
     //kMeans(&wineQuality, n_points, n_clusters, max_iters, seed, "../outputs/results_sequential_wine_replicated_" + std::to_string(seed) + "_" + std::to_string(max_iters) + ".csv");
-    std::cout << "Sequential version:" << std::endl;
-    kMeans(&wineQuality, n_points, n_clusters, max_iters, seed, "../outputs/results_serial_new_wine_replicated_" + std::to_string(seed) + "_" + std::to_string(max_iters) + ".csv");
+    //std::cout << "Sequential version:" << std::endl;
+    //kMeans(&wineQuality, n_points, n_clusters, max_iters, seed, "../outputs/results_sequential_new_wine_replicated_" + std::to_string(seed) + "_" + std::to_string(max_iters) + ".csv");
     std::cout << "Parallel version:" << std::endl;
     kMeansParallel(&wineQuality, n_points, n_clusters, max_iters, seed, "../outputs/results_parallel_new_wine_replicated_" + std::to_string(seed) + "_" + std::to_string(max_iters) + ".csv");
     return 0;
